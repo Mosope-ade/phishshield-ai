@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- SEO: descriptive title and meta description -->
+    <title>PhishShield AI — Free Phishing & Scam Detector</title>
+    <meta
+      name="description"
+      content="Free, no-account tool to detect phishing and scams in messages, links, screenshots, and QR codes. Three independent evidence layers: AI, heuristics, and VirusTotal."
+    />
+
+    <!-- Google Fonts — UI.md §3 typography -->
+    <link
+      rel="preconnect"
+      href="https://fonts.googleapis.com"
+    />
+    <link
+      rel="preconnect"
+      href="https://fonts.gstatic.com"
+      crossorigin
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      Content Security Policy (SECURITY.md §10):
+      Restricts scripts to self + fonts.googleapis.com only.
+      unsafe-inline needed for Vite dev HMR; tighten in production via server headers.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://localhost:8000 https://api.phishshield.ai;"
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="PhishShield AI — Free Phishing Detector" />
+    <meta
+      property="og:description"
+      content="Analyze messages, links, screenshots, and QR codes for phishing and scams. AI + heuristics + VirusTotal, all labeled separately."
+    />
+    <meta property="og:type" content="website" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
