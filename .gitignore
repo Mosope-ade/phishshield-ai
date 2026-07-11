@@ -1,65 +1,65 @@
-# ─── Secrets (NEVER commit these) ───────────────────────────────────────────
+# ──────────────────────────────────────────────────────────────────────────────
+# PhishShield AI — Consolidated Gitignore
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ─── Secrets & Environment Variables ──────────────────────────────────────────
 .env
 .env.local
 .env.*.local
+*.env
+*.env.*
 backend/.env
 frontend/.env
 
-# ─── Virtual environments ─────────────────────────────────────────────────────
+# ─── Python Virtual Environments & Packages ───────────────────────────────────
 .venv/
-venv/
-env/
-ENV/
-
-# ─── Python ──────────────────────────────────────────────────────────────────
+# ─── Python Caches & Compiled Files ───────────────────────────────────────────
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-*.egg
-*.egg-info/
-dist/
-build/
-.eggs/
-*.whl
-.Python
-env/
-venv/
-.venv/
-ENV/
-.tox/
 .mypy_cache/
 .dmypy.json
 .pyre/
 .ruff_cache/
 
-# ─── Node / Frontend ─────────────────────────────────────────────────────────
+# ─── Node & Frontend ──────────────────────────────────────────────────────────
 node_modules/
 frontend/node_modules/
+dist/
+dist-ssr/
 frontend/dist/
+frontend/dist-ssr/
+.vite/
 frontend/.vite/
 *.tsbuildinfo
 
-# ─── Testing ─────────────────────────────────────────────────────────────────
+# ─── Testing & Coverage ───────────────────────────────────────────────────────
 .pytest_cache/
 .coverage
 htmlcov/
 .hypothesis/
 coverage.xml
+.nyc_output/
 
-# ─── IDEs / OS ───────────────────────────────────────────────────────────────
+# ─── Logs & Cache ─────────────────────────────────────────────────────────────
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ─── IDEs, Text Editors, & OS Files ───────────────────────────────────────────
 .idea/
 .vscode/
 *.swp
 *.swo
 .DS_Store
 Thumbs.db
+Desktop.ini
 
-# ─── Logs ────────────────────────────────────────────────────────────────────
-*.log
-logs/
-
-# ─── Temp / uploads ──────────────────────────────────────────────────────────
+# ─── Runtime / Temporary Directories ──────────────────────────────────────────
 /tmp/
 uploads/
 PLAN.md

@@ -19,10 +19,30 @@ from __future__ import annotations
 
 import ipaddress
 import socket
+from contextvars import ContextVar
 from typing import NamedTuple
 from urllib.parse import urlparse
 
 import httpx
+
+# ── DNS Rebinding Prevention Context ──────────────────────────────────────────
+_dns_override: ContextVar[dict[str, str]] = ContextVar('dns_override', default={})
+_original_getaddrinfo = socket.getaddrinfo
+
+
+def _patched_getaddrinfo(host, port, family=0, type=0, proto=0, flags=0):
+    override = _dns_override.get()
+    if host in override:
+        ip = override[host]
+        if ':' in ip:  # IPv6
+            return [(socket.AF_INET6, socket.SocketKind.SOCK_STREAM, 6, '', (ip, port or 80, 0, 0))]
+        else:  # IPv4
+            return [(socket.AF_INET, socket.SocketKind.SOCK_STREAM, 6, '', (ip, port or 80))]
+    return _original_getaddrinfo(host, port, family, type, proto, flags)
+
+
+# Apply the global DNS patch at module startup
+socket.getaddrinfo = _patched_getaddrinfo
 
 # ── Configuration constants ───────────────────────────────────────────────────
 
@@ -65,16 +85,19 @@ class FetchResult(NamedTuple):
     redirect_chain: list[str]  # All URLs visited in order
 
 
-def _resolve_and_check_ip(hostname: str) -> None:
+def _resolve_and_check_ip(hostname: str) -> str:
     """
     DNS-resolve hostname and reject any result that falls within a blocked
-    network range. Raises SSRFError if blocked.
+    network range. Raises SSRFError if blocked. Returns the verified IP address.
     """
     try:
+        # Call socket.getaddrinfo so test mocks can intercept DNS resolution.
+        # When no override is active, this safely falls back to the original resolver.
         results = socket.getaddrinfo(hostname, None)
     except socket.gaierror as exc:
         raise SSRFError(f'Cannot resolve hostname: {hostname!r}: {exc}') from exc
 
+    resolved_ip = None
     for _family, _type, _proto, _canonname, sockaddr in results:
         ip_str = sockaddr[0]
         try:
@@ -88,6 +111,13 @@ def _resolve_and_check_ip(hostname: str) -> None:
                     f'blocked private/reserved range ({blocked_net}). '
                     'Request blocked to prevent SSRF.'
                 )
+        if resolved_ip is None:
+            resolved_ip = ip_str
+
+    if not resolved_ip:
+        raise SSRFError(f'No valid IP address resolved for hostname: {hostname!r}')
+
+    return resolved_ip
 
 
 def _validate_url_scheme(url: str) -> None:
@@ -150,10 +180,15 @@ async def safe_fetch_url(
             if not hostname:
                 raise SSRFError(f'Cannot extract hostname from URL: {current_url!r}')
 
-            # IP check BEFORE each request
-            _resolve_and_check_ip(hostname)
+            # IP check BEFORE each request, returning the verified IP
+            resolved_ip = _resolve_and_check_ip(hostname)
 
-            response = await client.head(current_url)
+            # Apply context-local DNS override to prevent DNS rebinding
+            token = _dns_override.set({hostname: resolved_ip})
+            try:
+                response = await client.head(current_url)
+            finally:
+                _dns_override.reset(token)
 
             if follow_redirects and response.is_redirect:
                 if hops >= MAX_REDIRECTS:

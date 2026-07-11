@@ -5,7 +5,7 @@
  * Results append in-place after submission (no route change, UI.md §6).
  */
 
-import { useRef, useState, useId } from 'react';
+import { useRef, useState, useId, useEffect } from 'react';
 import { useAnalysis } from '../hooks/useAnalysis';
 import { ResultsBlock } from '../components/ResultsBlock';
 import { Footer } from '../components/Footer';
@@ -23,30 +23,77 @@ const PLACEHOLDER_TEXT =
 export function Landing() {
   const [text, setText] = useState('');
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaId = useId();
   const { state, submit, reset } = useAnalysis();
 
+  useEffect(() => {
+    const handlePaste = (e: ClipboardEvent) => {
+      const items = e.clipboardData?.items;
+      if (!items) return;
+
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        if (item.type.startsWith('image/')) {
+          const file = item.getAsFile();
+          if (file) {
+            setValidationError(null);
+            if (file.size > 2 * 1024 * 1024) {
+              setValidationError('Upload exceeds maximum size of 2MB.');
+              setImageFile(null);
+              if (fileInputRef.current) fileInputRef.current.value = '';
+              return;
+            }
+            // Create a file object with a descriptive name for the upload payload
+            const pastedFile = new File([file], 'pasted-screenshot.png', { type: file.type });
+            setImageFile(pastedFile);
+            setText(''); // Image takes priority over text (PLAN.md §4.1)
+            e.preventDefault();
+            break;
+          }
+        }
+      }
+    };
+
+    window.addEventListener('paste', handlePaste);
+    return () => {
+      window.removeEventListener('paste', handlePaste);
+    };
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (state.status === 'loading') return;
+    setValidationError(null);
     await submit(text, imageFile);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null;
-    setImageFile(file);
-    if (file) setText(''); // Image takes priority over text (PLAN.md §4.1)
+    setValidationError(null);
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        setValidationError('Upload exceeds maximum size of 2MB.');
+        setImageFile(null);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+      setImageFile(file);
+      setText(''); // Image takes priority over text (PLAN.md §4.1)
+    }
   };
 
   const removeFile = () => {
     setImageFile(null);
+    setValidationError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
   const handleReset = () => {
     setText('');
     setImageFile(null);
+    setValidationError(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
     reset();
   };
@@ -130,17 +177,22 @@ export function Landing() {
                     </button>
                   </div>
                 ) : (
-                  <label
-                    htmlFor="image-upload"
-                    className="attach-btn"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-                    role="button"
-                    aria-label="Attach image file"
-                  >
-                    <span className="attach-btn__icon" aria-hidden="true">📎</span>
-                    <span>Attach image</span>
-                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px' }}>
+                    <label
+                      htmlFor="image-upload"
+                      className="attach-btn"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+                      role="button"
+                      aria-label="Attach image file"
+                    >
+                      <span className="attach-btn__icon" aria-hidden="true">📎</span>
+                      <span>Attach image</span>
+                    </label>
+                    <span style={{ fontSize: '11px', color: 'var(--text-2)' }} aria-hidden="true">
+                      (Max 2MB)
+                    </span>
+                  </div>
                 )}
               </div>
 
@@ -193,6 +245,29 @@ export function Landing() {
             <p style={{ fontSize: '12px', color: 'var(--text-2)' }}>
               Running three independent analysis layers…
             </p>
+          </div>
+        )}
+
+        {/* ── Validation Error state ── */}
+        {validationError && (
+          <div className="error-state" role="alert">
+            <p className="error-state__title">Validation failed</p>
+            <p>{validationError}</p>
+            <button
+              onClick={handleReset}
+              style={{
+                marginTop: '10px',
+                background: 'none',
+                border: '1px solid var(--border)',
+                borderRadius: '6px',
+                color: 'var(--text-2)',
+                fontSize: '13px',
+                padding: '6px 14px',
+                cursor: 'pointer',
+              }}
+            >
+              Clear
+            </button>
           </div>
         )}
 

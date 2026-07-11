@@ -12,6 +12,7 @@ PLAN.md §4.1: input type is auto-detected; no manual mode selector.
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import io
 import logging
@@ -19,7 +20,7 @@ import re
 import os
 from typing import Annotated
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile, status
+from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile, status
 from pydantic import ValidationError
 
 from ..models.schemas import (
@@ -38,13 +39,14 @@ from ..services.ocr_fallback import extract_text_from_image
 from ..db.cache import get_cached_report, store_report, get_report_by_id
 from ..utils.hashing import hash_content, normalize_url, normalize_text, generate_report_id
 from ..utils.sanitize import sanitize_for_log
+from ..utils.limiter import limiter
 from .prompts import build_text_analysis_prompt, build_screenshot_analysis_prompt
 from .scoring import compute_overall_risk_score
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix='/analyze', tags=['analysis'])
 
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB (SECURITY.md §8)
+MAX_UPLOAD_BYTES = 2 * 1024 * 1024  # 2 MB (SECURITY.md §8)
 
 # URL detection regex — matches http(s):// URLs
 _URL_RE = re.compile(
@@ -87,7 +89,7 @@ async def _analyze_url_pipeline(url: str) -> tuple[HeuristicsResult, AnalysisRes
     Step 4: VirusTotal
     """
     # Step 1: Heuristics on original URL
-    heuristics = run_all_heuristics(url)
+    heuristics = await asyncio.to_thread(run_all_heuristics, url)
     final_url = url
 
     # Step 2: Shortener resolution
@@ -100,7 +102,7 @@ async def _analyze_url_pipeline(url: str) -> tuple[HeuristicsResult, AnalysisRes
             heuristics.resolved_final_url = final_url
             if final_url != url:
                 # Re-run heuristics on resolved destination
-                resolved_heuristics = run_all_heuristics(final_url)
+                resolved_heuristics = await asyncio.to_thread(run_all_heuristics, final_url)
                 # Merge findings
                 heuristics.typosquatting_detected |= resolved_heuristics.typosquatting_detected
                 heuristics.homograph_detected |= resolved_heuristics.homograph_detected
@@ -149,7 +151,8 @@ def _ai_unavailable_result() -> AnalysisResult:
 
 
 @router.post('/text', response_model=FullReport)
-async def analyze_text(request: Request, body: TextAnalysisRequest) -> FullReport:
+@limiter.limit('10/minute')
+async def analyze_text(request: Request, response: Response, body: TextAnalysisRequest) -> FullReport:
     """
     Analyze a pasted message or URL.
     Auto-detects input type: single URL -> URL pipeline; free text -> text pipeline.
@@ -231,8 +234,10 @@ async def analyze_text(request: Request, body: TextAnalysisRequest) -> FullRepor
 
 
 @router.post('/image', response_model=FullReport)
+@limiter.limit('10/minute')
 async def analyze_image(
     request: Request,
+    response: Response,
     file: Annotated[UploadFile, File(description='Screenshot or QR code image')],
 ) -> FullReport:
     """
@@ -245,14 +250,14 @@ async def analyze_image(
     if content_length and int(content_length) > MAX_UPLOAD_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail='Upload exceeds maximum size of 10MB.',
+            detail='Upload exceeds maximum size of 2MB.',
         )
 
     image_bytes = await file.read(MAX_UPLOAD_BYTES + 1)
     if len(image_bytes) > MAX_UPLOAD_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail='Upload exceeds maximum size of 10MB.',
+            detail='Upload exceeds maximum size of 2MB.',
         )
 
     # SECURITY.md §8: validate actual image content via magic bytes / Pillow
@@ -378,7 +383,8 @@ async def analyze_image(
 
 
 @router.get('/report/{report_id}', response_model=FullReport)
-async def get_report(report_id: str) -> FullReport:
+@limiter.limit('30/minute')
+async def get_report(request: Request, response: Response, report_id: str) -> FullReport:
     """Fetch a cached report by its public slug ID."""
     cached = await get_report_by_id(report_id)
     if not cached:

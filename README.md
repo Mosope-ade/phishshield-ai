@@ -1,231 +1,38 @@
 # PhishShield AI
 
-> Free, public, no-account web app that analyzes messages, links, screenshots, and QR codes to detect phishing and scam attempts — and explains exactly why.
+PhishShield AI is a free, public, privacy-first decision-support platform designed to protect users from social engineering attacks by detecting phishing and scams instantly. The application is built for general public use, requiring no user accounts, no login, and storing no personal data.
 
-**Three independent evidence layers** — AI, heuristics, VirusTotal — all labeled separately. None silently overrides the others.
-
----
-
-## Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-- Node.js 18+
-- A VirusTotal API key (free tier)
-- An LLM provider API key (Gemini / OpenAI / Anthropic)
-- A Supabase project
-
-### 1. Clone & configure
-
-```bash
-git clone https://github.com/your-org/phishshield-ai.git
-cd phishshield-ai
-```
-
-Copy and fill in both env files:
-
-```bash
-cp .env.example backend/.env
-cp frontend/.env.example frontend/.env
-```
-
-Edit `backend/.env` and set every variable (see [Environment Variables](#environment-variables) below).
-
-### 2. Backend setup
-
-```bash
-cd phishshield-ai
-python3 -m venv .venv
-source .venv/bin/activate           # Windows: .venv\Scripts\activate
-
-pip install -r backend/requirements.txt
-```
-
-Run the backend:
-
-```bash
-uvicorn backend.main:app --reload --port 8000
-```
-
-API docs available at: http://localhost:8000/docs
-
-### 3. Frontend setup
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-App available at: http://localhost:5173
-
-### 4. Database setup
-
-Create a Supabase project and run this SQL in the SQL editor:
-
-```sql
-create table reports (
-  id text primary key,
-  input_hash text unique not null,
-  input_type text not null,
-  report_json jsonb not null,
-  created_at timestamptz default now()
-);
-create index on reports (input_hash);
-
--- Row Level Security (SECURITY.md §9)
-alter table reports enable row level security;
-
--- Public reads by slug ID only
-create policy "public read by id"
-  on reports for select
-  using (true);
-
--- Writes restricted to service role (enforced by not granting anon insert)
-create policy "service role write"
-  on reports for insert
-  with check (auth.role() = 'service_role');
-```
+Users can submit suspicious messages, URLs, screenshots of messages/emails, or QR codes. The platform processes the input, aggregates multi-layered security indicators, and explains its reasoning in clear, plain language.
 
 ---
 
-## Running Tests (Phase 1)
+## The Three-Layer Detection Architecture
 
-```bash
-source .venv/bin/activate
-python -m pytest tests/ -v
-```
+A core design law of PhishShield AI is that no single layer of evidence ever silently overrides another. Every report displays findings separately by their source so that users can make informed security decisions.
 
-Expected output: all tests in `test_heuristics.py`, `test_safe_fetch.py`, and `test_schema_validation.py` pass.
+### 1. Deterministic Heuristics Layer (Uninjectable)
+The first layer runs entirely server-side without external network calls. Because it is deterministic, it cannot be bypassed or fooled by adversarial text instructions (prompt injections). It checks for:
+- **Typosquatting & Homoglyphs**: Calculates edit distances (Levenshtein ≤ 2) against the top 1M domains and flags Unicode substitutions that spoof popular brand domains.
+- **Brand Subdomain Impersonation**: Flags when trusted brand names appear in subdomains of untrusted registered domains (e.g., `paypal.com.login-verify.ru`).
+- **TLD & URL Features**: Identifies suspicious top-level domains commonly used in phishing, excessive URL length, known shorteners, HTTP connections, and credential-harvesting keywords.
 
----
+### 2. Large Language Model (LLM) Layer
+A Large Language Model analyzes the semantic intent of messages, images, and page content.
+- **Social Engineering Markers**: Inspects text for urgency, fear tactics, payment requests, unrealistic rewards, or tone inconsistencies.
+- **Prompt-Injection Defense**: Delimits user-influenced input safely and explicitly instructs the model to treat content as data, never as commands.
+- **Pydantic Validation**: All raw outputs from the LLM are strictly validated against a server-side schema before ingestion.
 
-## Environment Variables
-
-All variables are documented in [`.env.example`](.env.example). Backend variables:
-
-| Variable | Description |
-|---|---|
-| `LLM_PROVIDER` | Provider name: `gemini`, `openai`, `anthropic` |
-| `LLM_API_KEY` | API key for the LLM provider |
-| `LLM_MODEL` | Model identifier (e.g. `gemini/gemini-1.5-pro`) |
-| `VIRUSTOTAL_API_KEY` | VirusTotal Public API v3 key |
-| `SUPABASE_URL` | Your Supabase project URL |
-| `SUPABASE_SERVICE_KEY` | Service role key — **server-side only** |
-| `SUPABASE_ANON_KEY` | Anon key — frontend read-only (optional) |
-| `ALLOWED_ORIGIN` | Deployed frontend URL for CORS |
-| `RATE_LIMIT_PER_MINUTE` | Per-IP rate limit (default: 10) |
-| `CACHE_TTL_HOURS` | VirusTotal cache TTL in hours (default: 24) |
-
-Frontend variable (in `frontend/.env`):
-
-| Variable | Description |
-|---|---|
-| `VITE_API_URL` | Backend URL (default: `http://localhost:8000`) |
+### 3. VirusTotal Reputation Layer
+Integrates VirusTotal's public registry to check domains and file hashes against 70+ antivirus engines.
+- **Corroborating Evidence**: VirusTotal is treated as supportive data — a "clean" result does not suppress strong flags raised by heuristics or AI, preventing newly registered phishing campaigns from bypassing detection.
 
 ---
 
-## Architecture
+## Core Product Features
 
-```
-User input (text / URL / image / QR)
-        │
-        ▼
-┌──────────────────────────────────────────────────────────┐
-│                    FastAPI Backend                        │
-│                                                          │
-│  ┌─────────────┐  ┌────────────────┐  ┌──────────────┐  │
-│  │  Heuristics │  │   LLM (AI)     │  │  VirusTotal  │  │
-│  │  engine     │  │   analysis     │  │  reputation  │  │
-│  │ (no ext. I/O│  │ (prompt-inject │  │ (corroborate │  │
-│  │  —fast, no  │  │  defended)     │  │  only — never│  │
-│  │  injection) │  │                │  │  sole verdict│  │
-│  └──────┬──────┘  └───────┬────────┘  └──────┬───────┘  │
-│         │                 │                   │          │
-│         └────────────┬────┘                   │          │
-│                      │ Aggregated risk score  │          │
-│                      │ (labeled by source)    │          │
-│                      ▼                        │          │
-│              ┌───────────────┐                │          │
-│              │  FullReport   │◄───────────────┘          │
-│              │  (Pydantic    │                           │
-│              │   validated)  │                           │
-│              └───────────────┘                           │
-└──────────────────────────────────────────────────────────┘
-        │
-        ▼
-  React Frontend
-  (verdict-first, evidence-second,
-   safe text rendering only)
-```
-
----
-
-## Folder Structure
-
-```
-phishshield-ai/
-├── frontend/               React 19 + Vite + TypeScript
-│   ├── src/
-│   │   ├── pages/          Landing, Report, Learn, Privacy, Disclaimer
-│   │   ├── components/     RiskMeter, RiskBadge, EvidenceCard, HighlightedText,
-│   │   │                   RecommendationsList, ResultsBlock, Topbar, Footer
-│   │   ├── hooks/          useAnalysis
-│   │   ├── services/       api.ts (typed API client)
-│   │   └── types/          api.ts (TypeScript interfaces)
-│   └── .env.example
-├── backend/
-│   ├── api/                FastAPI routes (thin controllers)
-│   │   ├── analyze.py      POST /analyze/text, POST /analyze/image, GET /analyze/report/:id
-│   │   ├── prompts.py      LLM prompt construction (prompt-injection defended)
-│   │   └── scoring.py      Risk score aggregation (defense-in-depth weighted)
-│   ├── services/
-│   │   ├── heuristics/     typosquat, homograph, tld, subdomain, url_features
-│   │   ├── llm_client.py   LiteLLM provider-agnostic wrapper + vision support
-│   │   ├── virustotal.py   VT v3 URL + hash endpoints
-│   │   ├── safe_fetch.py   SSRF-safe URL fetcher (SECURITY.md §4)
-│   │   ├── qr_decode.py    pyzbar + Pillow QR decoder
-│   │   └── ocr_fallback.py Tesseract OCR fallback
-│   ├── models/schemas.py   Pydantic v2 schemas (LLM output contract + API types)
-│   ├── db/cache.py         Supabase cache (hash-only, parameterized)
-│   ├── utils/              hashing.py, sanitize.py
-│   ├── data/               tranco_top_domains.csv, suspicious_tlds.txt, etc.
-│   ├── main.py             FastAPI app: CORS, rate limiting, security headers
-│   └── requirements.txt
-├── tests/
-│   ├── test_heuristics.py      25 unit tests, known-bad + known-good domains
-│   ├── test_safe_fetch.py      11 tests, all private IP ranges + scheme checks
-│   └── test_schema_validation.py  13 tests, LLM output validation
-├── docs/
-│   ├── privacy.md
-│   └── disclaimer.md
-├── .env.example
-├── .gitignore              (.env excluded from first commit)
-├── pytest.ini
-├── PROGRESS.md
-└── README.md
-```
-
----
-
-## Security
-
-See [`SECURITY.md`](SECURITY.md) for the full mandatory secure-coding requirements.
-Key controls:
-- **SSRF protection** — all user-URL fetches via `safe_fetch.py`, never raw `httpx`
-- **Prompt injection defense** — user content always in delimited blocks; heuristics + VT provide independent checks
-- **LLM output validation** — all LLM responses validated against Pydantic schema before use
-- **No raw user content stored** — only SHA-256 hashes
-- **Rate limiting** — per-IP via `slowapi`
-- **CORS** — locked to `ALLOWED_ORIGIN`, no wildcard
-
----
-
-## Deployment
-
-- **Frontend** → Vercel (connect GitHub repo, set `VITE_API_URL` in project settings)
-- **Backend** → Fly.io or Railway (containerized, set env vars as platform secrets)
-- **Database** → Supabase (run the schema SQL above, configure RLS)
-
-See [`PLAN.md §11`](PLAN.md) for full deployment notes.
+- **Unified Submission Surface**: A single interface that automatically detects input types. Paste text, paste a URL, or drop an image. No manual mode selectors.
+- **QR Code & Screenshot Processing**: Decodes QR codes ("quishing" protection) and falls back to OCR text extraction for screenshots, passing the payloads through the full analysis pipeline.
+- **File Hash Lookup**: Computes SHA-256 hashes of files on upload to query VirusTotal reputations without ever storing or uploading the raw file content.
+- **Privacy-First Cache**: Analysis results are cached for up to 24 hours using only SHA-256 hashes of normalized inputs. Raw user submissions are never persisted.
+- **Verdict-First User Interface**: Visual presentation displaying a clear threat badge (Low, Medium, High, Critical) and plain-language summary, followed by granular evidence panels and safety recommendations.
+- **Security-Minded Permalinks**: Analysis reports can be shared via non-sequential, randomly generated slug URLs. All report pages are marked `noindex` to keep search engines from indexing them.

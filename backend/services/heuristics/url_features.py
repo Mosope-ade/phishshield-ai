@@ -46,6 +46,14 @@ def _load_set_from_file(filepath: str) -> frozenset[str]:
 _SHORTENER_DOMAINS: frozenset[str] = _load_set_from_file(SHORTENER_FILE)
 _BRAND_KEYWORDS: frozenset[str] = _load_set_from_file(KEYWORDS_FILE)
 
+# Pre-compile the union of all brand keywords with word-boundary checks
+_BRAND_KEYWORDS_RE: re.Pattern | None = None
+if _BRAND_KEYWORDS:
+    _BRAND_KEYWORDS_RE = re.compile(
+        r'(?<![a-z])(?:' + '|'.join(re.escape(kw) for kw in sorted(_BRAND_KEYWORDS)) + r')(?![a-z])',
+        re.IGNORECASE
+    )
+
 
 @dataclass
 class URLFeaturesResult:
@@ -113,10 +121,10 @@ def check_url_features(
     # ── Brand/trigger keyword in path or query ────────────────────────────────
     path_and_query = ((parsed.path or '') + '?' + (parsed.query or '')).lower()
     found_keywords: list[str] = []
-    for kw in _BRAND_KEYWORDS:
-        # Use word-boundary-aware check for keywords
-        if re.search(r'(?<![a-z])' + re.escape(kw) + r'(?![a-z])', path_and_query):
-            found_keywords.append(kw)
+    if _BRAND_KEYWORDS_RE is not None:
+        matches = _BRAND_KEYWORDS_RE.findall(path_and_query)
+        if matches:
+            found_keywords = sorted(list(set(matches)))
 
     if found_keywords:
         kw_str = ', '.join(f"'{k}'" for k in sorted(found_keywords))

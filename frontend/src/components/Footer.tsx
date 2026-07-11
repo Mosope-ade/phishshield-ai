@@ -4,7 +4,7 @@
  * Text links only: Learn · Privacy · Disclaimer · GitHub.
  */
 
-import { Link } from 'react-router-dom';
+import { Link } from "react-router-dom";
 
 export function Footer() {
   return (
@@ -13,7 +13,7 @@ export function Footer() {
       <Link to="/privacy">Privacy</Link>
       <Link to="/disclaimer">Disclaimer</Link>
       <a
-        href="https://github.com"
+        href="https://github.com/Mosope-ade/phishshield-ai.git"
         target="_blank"
         rel="noopener noreferrer"
       >

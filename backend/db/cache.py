@@ -27,16 +27,24 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-def _get_supabase_client():
-    """Lazy-import supabase client to avoid import errors when running tests
-    without supabase configured."""
+_supabase_client_singleton: Optional[Client] = None
+
+
+def _get_supabase_client() -> Optional[Client]:
+    """Lazy-import and cache Supabase client to avoid import errors when running tests
+    without supabase configured, while reusing the same connection pool in production."""
+    global _supabase_client_singleton
+    if _supabase_client_singleton is not None:
+        return _supabase_client_singleton
+
     try:
         from supabase import create_client, Client
         url = os.environ.get('SUPABASE_URL', '')
         key = os.environ.get('SUPABASE_SERVICE_KEY', '')
         if not url or not key:
             return None
-        return create_client(url, key)
+        _supabase_client_singleton = create_client(url, key)
+        return _supabase_client_singleton
     except Exception as exc:
         logger.warning('Supabase client init failed: %s', exc)
         return None

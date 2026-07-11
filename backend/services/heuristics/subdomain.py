@@ -11,6 +11,7 @@ typosquat.py.
 
 from __future__ import annotations
 
+import functools
 import re
 from dataclasses import dataclass, field
 from .typosquat import _load_top_domains
@@ -43,6 +44,18 @@ def _extract_brand_from_domain(domain: str) -> str | None:
     return None
 
 
+@functools.lru_cache(maxsize=1)
+def _get_combined_brand_names() -> frozenset[str]:
+    """Cache the combined brand names list once loaded from typosquat top domains."""
+    top_domains = _load_top_domains()
+    brand_names = set(_BRAND_NAMES)
+    for td in top_domains:
+        brand = _extract_brand_from_domain(td)
+        if brand and len(brand) > 3:  # Skip very short names (e.g. 'go', 'fb')
+            brand_names.add(brand)
+    return frozenset(brand_names)
+
+
 def check_subdomain_impersonation(
     subdomain: str, registered_domain: str
 ) -> SubdomainResult:
@@ -65,14 +78,7 @@ def check_subdomain_impersonation(
 
     subdomain_lower = subdomain.lower()
     registered_lower = registered_domain.lower()
-    top_domains = _load_top_domains()
-
-    # Build combined brand name set: explicit list + extracted from top domains
-    brand_names = set(_BRAND_NAMES)
-    for td in top_domains:
-        brand = _extract_brand_from_domain(td)
-        if brand and len(brand) > 3:  # Skip very short names (e.g. 'go', 'fb')
-            brand_names.add(brand)
+    brand_names = _get_combined_brand_names()
 
     # Check each label of the subdomain
     subdomain_labels = re.split(r'[\.\-]', subdomain_lower)

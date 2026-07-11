@@ -53,16 +53,28 @@ export function Report() {
     };
   }, [id]);
 
+  useEffect(() => {
+    // SECURITY.md §15: noindex so search engines don't index report pages.
+    // Dynamic meta tag injection since rendering <head> inside body is ignored by browsers.
+    let meta = document.querySelector('meta[name="robots"]');
+    let created = false;
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'robots');
+      document.head.appendChild(meta);
+      created = true;
+    }
+    meta.setAttribute('content', 'noindex, nofollow');
+
+    return () => {
+      if (created && meta && meta.parentNode) {
+        meta.parentNode.removeChild(meta);
+      }
+    };
+  }, []);
+
   return (
     <>
-      {/*
-       * SECURITY.md §15: noindex so search engines don't index report pages.
-       * Even though raw content isn't stored, aggregated findings could reference
-       * identifiable details in edge cases.
-       */}
-      <head>
-        <meta name="robots" content="noindex, nofollow" />
-      </head>
 
       <main id="main-content" className="report-page">
         <Link to="/" className="report-page__back" aria-label="Back to PhishShield AI home">

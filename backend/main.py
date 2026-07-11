@@ -10,15 +10,20 @@ from __future__ import annotations
 
 import logging
 import os
+from dotenv import load_dotenv
+
+# Load .env file (python-dotenv automatically climbs up to find it)
+load_dotenv()
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
+from slowapi.middleware import SlowAPIMiddleware
 
 from .api.analyze import router as analyze_router
+from .utils.limiter import limiter
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,8 +32,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ── Rate limiter ──────────────────────────────────────────────────────────────
-# SECURITY.md §7: per-IP rate limiting
-limiter = Limiter(key_func=get_remote_address)
+# SECURITY.md §7: per-IP rate limiting (shared instance)
 
 app = FastAPI(
     title='PhishShield AI',
@@ -39,6 +43,7 @@ app = FastAPI(
 )
 
 app.state.limiter = limiter
+app.add_middleware(SlowAPIMiddleware)
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
@@ -60,6 +65,7 @@ async def add_security_headers(request: Request, call_next):
     response.headers['X-Content-Type-Options'] = 'nosniff'
     response.headers['X-Frame-Options'] = 'DENY'
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
     # SECURITY.md §14: never return stack traces to client
     return response
 
