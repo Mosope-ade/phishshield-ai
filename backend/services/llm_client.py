@@ -310,10 +310,13 @@ async def call_llm_for_analysis(
                 raw_text = await _call_anthropic(model, api_key, sys_p, user_p, image_base64, image_media_type)
             else:
                 raise LLMError(f"Unsupported LLM provider: {provider}")
-            
-            return _extract_json_from_response(raw_text)
+
+            parsed = _extract_json_from_response(raw_text)
+            if parsed is None:
+                logger.warning('LLM returned non-JSON output (provider=%s model=%s): %r', provider, model, raw_text[:200])
+            return parsed
         except Exception as exc:
-            logger.warning('LLM call failed: %s', exc)
+            logger.warning('LLM call failed (provider=%s model=%s): %s', provider, model, exc, exc_info=True)
             return None
 
     result = await _attempt(system_prompt, user_content_block)

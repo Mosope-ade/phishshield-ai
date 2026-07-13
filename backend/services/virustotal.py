@@ -23,7 +23,7 @@ from ..models.schemas import ThreatIntelFindings
 logger = logging.getLogger(__name__)
 
 VT_BASE_URL = 'https://www.virustotal.com/api/v3'
-VT_TIMEOUT = httpx.Timeout(10.0)
+VT_TIMEOUT = httpx.Timeout(20.0)
 
 
 def _get_vt_key() -> Optional[str]:
