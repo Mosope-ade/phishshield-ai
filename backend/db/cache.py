@@ -64,7 +64,7 @@ async def get_cached_report(input_hash: str) -> Optional[dict]:
             client.table('reports')
             .select('report_json')
             .eq('input_hash', input_hash)  # Parameterized via supabase-py
-            .single()
+            .maybe_single()
             .execute()
         )
         if response.data:
@@ -123,7 +123,7 @@ async def get_report_by_id(report_id: str) -> Optional[dict]:
             client.table('reports')
             .select('report_json')
             .eq('id', report_id)  # Parameterized via supabase-py
-            .single()
+            .maybe_single()
             .execute()
         )
         if response.data:
