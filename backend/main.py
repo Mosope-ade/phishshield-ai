@@ -1,5 +1,5 @@
 """
-PhishShield AI — FastAPI application entry point.
+HookCheck — FastAPI application entry point.
 
 SECURITY.md §10: CORS locked to ALLOWED_ORIGIN; security headers set.
 SECURITY.md §7: rate limiting via slowapi.
@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 # SECURITY.md §7: per-IP rate limiting (shared instance)
 
 app = FastAPI(
-    title='PhishShield AI',
+    title='HookCheck',
     description='Analyze messages, links, screenshots, and QR codes for phishing and scams.',
     version='1.0.0',
     docs_url='/docs',  # Disable in production if desired
@@ -77,7 +77,7 @@ app.include_router(analyze_router)
 @app.get('/health')
 async def health_check():
     """Basic health check endpoint."""
-    return {'status': 'ok', 'service': 'PhishShield AI'}
+    return {'status': 'ok', 'service': 'HookCheck'}
 
 
 # ── Global exception handler ──────────────────────────────────────────────────

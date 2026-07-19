@@ -4,7 +4,7 @@ See [frontend/src/pages/Disclaimer.tsx](../frontend/src/pages/Disclaimer.tsx) fo
 
 ## Summary
 
-PhishShield AI is a **decision-support tool**, not a guarantee of safety.
+HookCheck is a **decision-support tool**, not a guarantee of safety.
 
 - A "Likely Safe" result does not mean content is definitively safe.
 - A "Likely Phishing" result does not mean content is definitively malicious.

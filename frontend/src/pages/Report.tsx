@@ -77,7 +77,7 @@ export function Report() {
     <>
 
       <main id="main-content" className="report-page">
-        <Link to="/" className="report-page__back" aria-label="Back to PhishShield AI home">
+        <Link to="/" className="report-page__back" aria-label="Back to HookCheck home">
           ← Check another message
         </Link>
 

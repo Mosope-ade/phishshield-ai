@@ -1,5 +1,5 @@
 # ──────────────────────────────────────────────────────────────────────────────
-# PhishShield AI — Consolidated Gitignore
+# HookCheck — Consolidated Gitignore
 # ──────────────────────────────────────────────────────────────────────────────
 
 # ─── Secrets & Environment Variables ──────────────────────────────────────────
@@ -65,3 +65,4 @@ uploads/
 PLAN.md
 UI.md
 SECURITY.md
+PROGRESS.md

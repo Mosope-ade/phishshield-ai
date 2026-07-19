@@ -13,7 +13,7 @@ export function Footer() {
       <Link to="/privacy">Privacy</Link>
       <Link to="/disclaimer">Disclaimer</Link>
       <a
-        href="https://github.com/Mosope-ade/phishshield-ai.git"
+        href="https://github.com/Mosope-ade/hookcheck.git"
         target="_blank"
         rel="noopener noreferrer"
       >

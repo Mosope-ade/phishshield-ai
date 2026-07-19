@@ -31,7 +31,7 @@ export default function App() {
               404 — Page Not Found
             </h1>
             <p style={{ color: 'var(--text-2)' }}>
-              <a href="/">← Back to PhishShield AI</a>
+              <a href="/">← Back to HookCheck</a>
             </p>
           </main>
         } />

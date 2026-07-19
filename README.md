@@ -1,6 +1,6 @@
-# PhishShield AI
+# HookCheck
 
-PhishShield AI is a free, public, privacy-first decision-support platform designed to protect users from social engineering attacks by detecting phishing and scams instantly. The application is built for general public use, requiring no user accounts, no login, and storing no personal data.
+HookCheck is a free, public, privacy-first decision-support platform designed to protect users from social engineering attacks by detecting phishing and scams instantly. The application is built for general public use, requiring no user accounts, no login, and storing no personal data.
 
 Users can submit suspicious messages, URLs, screenshots of messages/emails, or QR codes. The platform processes the input, aggregates multi-layered security indicators, and explains its reasoning in clear, plain language.
 
@@ -8,7 +8,7 @@ Users can submit suspicious messages, URLs, screenshots of messages/emails, or Q
 
 ## The Three-Layer Detection Architecture
 
-A core design law of PhishShield AI is that no single layer of evidence ever silently overrides another. Every report displays findings separately by their source so that users can make informed security decisions.
+A core design law of HookCheck is that no single layer of evidence ever silently overrides another. Every report displays findings separately by their source so that users can make informed security decisions.
 
 ### 1. Deterministic Heuristics Layer (Uninjectable)
 The first layer runs entirely server-side without external network calls. Because it is deterministic, it cannot be bypassed or fooled by adversarial text instructions (prompt injections). It checks for:

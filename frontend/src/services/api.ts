@@ -1,6 +1,6 @@
 /**
  * services/api.ts
- * API client for the PhishShield AI backend.
+ * API client for the HookCheck backend.
  * All keys and sensitive data stay server-side (SECURITY.md §11).
  */
 

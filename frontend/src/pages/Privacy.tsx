@@ -19,7 +19,7 @@ export function Privacy() {
 
           <h2>What we collect</h2>
           <p>
-            PhishShield AI does <strong>not</strong> store the text, URLs, or images you submit for analysis.
+            HookCheck does <strong>not</strong> store the text, URLs, or images you submit for analysis.
             When you submit content, we compute a SHA-256 cryptographic hash of your input and store only that
             hash alongside the analysis result. The original content cannot be reconstructed from the hash.
           </p>
@@ -51,7 +51,7 @@ export function Privacy() {
 
           <h2>No accounts</h2>
           <p>
-            PhishShield AI has no user accounts, no login, and no mechanism to associate submissions with
+            HookCheck has no user accounts, no login, and no mechanism to associate submissions with
             individuals. There is no personal data processing beyond what is described above.
           </p>
 

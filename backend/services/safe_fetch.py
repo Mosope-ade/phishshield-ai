@@ -172,7 +172,7 @@ async def safe_fetch_url(
     async with httpx.AsyncClient(
         follow_redirects=False,  # We handle redirects manually for IP re-check
         timeout=timeout,
-        headers={'User-Agent': 'PhishShield-SafeFetch/1.0 (security research)'},
+        headers={'User-Agent': 'HookCheck-SafeFetch/1.0 (security research)'},
     ) as client:
         while True:
             parsed = urlparse(current_url)

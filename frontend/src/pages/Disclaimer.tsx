@@ -16,7 +16,7 @@ export function Disclaimer() {
 
           <h2>Decision-support tool, not a guarantee</h2>
           <p>
-            PhishShield AI is a <strong>decision-support tool</strong>. Its analysis is intended to help
+            HookCheck is a <strong>decision-support tool</strong>. Its analysis is intended to help
             you make a more informed judgment, not to replace your own judgment. A result of
             "Likely Safe" does not mean the content is definitively safe, and a result of
             "Likely Phishing" does not mean the content is definitively malicious.
@@ -32,7 +32,7 @@ export function Disclaimer() {
 
           <h2>No liability</h2>
           <p>
-            PhishShield AI and its operators accept no liability for any harm arising from acting
+            HookCheck and its operators accept no liability for any harm arising from acting
             on or ignoring the results of an analysis. Use of this tool is at your own risk.
             Always exercise independent judgment and, when in doubt, consult your organization's
             IT or security team.
