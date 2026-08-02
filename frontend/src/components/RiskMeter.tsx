@@ -27,6 +27,22 @@ function getRiskScoreColor(score: number): string {
 
 export function RiskMeter({ report }: RiskMeterProps) {
   const { overall_risk_score } = report;
+  if (overall_risk_score === null) {
+    return (
+      <div className="risk-meter" role="meter" aria-valuenow={0} aria-valuemin={0} aria-valuemax={100} aria-label="Risk score: Unreadable image">
+        <div className="risk-meter__header">
+          <span className="risk-meter__label mono">Overall Risk</span>
+          <span className="risk-meter__score mono" style={{ color: 'var(--text-muted)' }}>
+            — / 100
+          </span>
+        </div>
+        <div className="risk-meter__bar">
+          <div className="risk-meter__fill" style={{ width: '0%', background: 'var(--text-muted)' }} />
+        </div>
+      </div>
+    );
+  }
+
   const color = getRiskColor(overall_risk_score);
 
   return (
@@ -49,3 +65,4 @@ export function RiskMeter({ report }: RiskMeterProps) {
     </div>
   );
 }
+

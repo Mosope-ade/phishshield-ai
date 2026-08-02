@@ -1,26 +1,17 @@
 /**
  * components/ResultsBlock.tsx
- * The complete results view: risk meter, badge, evidence cards, highlighted phrases,
- * recommendations, permalink copy, and disclaimer.
- *
- * Rendered on the Landing page (appended below input after submission)
- * and on the Report/:id permalink page (standalone, no input card).
- *
- * UI.md §4: verdict-first, evidence-second layout.
- * SECURITY.md §5: no dangerouslySetInnerHTML anywhere in this tree.
+ * Results view displaying Risk Badge, active evidence layers (Heuristics & VT),
+ * inactive AI indicator card, recommendations, and permalink link.
  */
 
 import { useState, useCallback } from 'react';
 import type { FullReport } from '../types/api';
-import { RiskMeter } from './RiskMeter';
 import { RiskBadge } from './RiskBadge';
 import {
-  AIEvidenceCard,
   HeuristicsEvidenceCard,
   ThreatIntelEvidenceCard,
+  AIEvidenceCardDisabled,
 } from './EvidenceCard';
-import { HighlightedText } from './HighlightedText';
-import { RecommendationsList } from './RecommendationsList';
 
 interface ResultsBlockProps {
   report: FullReport;
@@ -36,52 +27,45 @@ export function ResultsBlock({ report }: ResultsBlockProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback: select text
+      // Fallback
     }
   }, [reportUrl]);
 
   return (
     <section className="results-section" aria-label="Analysis results">
-      {/* ── Verdict first (UI.md §1 design law) ── */}
+      {/* Verdict badge & overall score */}
       <RiskBadge report={report} />
-      <RiskMeter report={report} />
 
-      {/* ── Evidence second — each source clearly labeled (PLAN.md §1) ── */}
+      {/* Evidence layers grid: Active Heuristics + Active VT + Disabled AI card */}
       <div className="evidence-grid">
-        {/*
-         * Three independent evidence layers. Sources are NEVER merged.
-         * AI can be prompt-injected; heuristics + VT remain independent checks.
-         * (SECURITY.md §3, PLAN.md §1 core design law)
-         */}
-        <AIEvidenceCard findings={report.ai_findings} />
         <HeuristicsEvidenceCard findings={report.heuristics_findings} />
         <ThreatIntelEvidenceCard findings={report.threat_intel_findings} />
       </div>
 
-      {/* ── Highlighted phrases ── */}
-      <HighlightedText phrases={report.ai_findings.highlighted_phrases} />
+      <AIEvidenceCardDisabled />
 
-      {/* ── Recommendations ── */}
-      <RecommendationsList recommendations={report.ai_findings.recommendations} />
+      {/* Recommendations Box */}
+      {report.ai_findings.recommendations.length > 0 && (
+        <div className="recommendations-box">
+          <h3 className="recommendations-box__title">Safety Guidance &amp; Recommendations</h3>
+          <ul className="recommendations-list">
+            {report.ai_findings.recommendations.map((rec, i) => (
+              <li key={i}>{rec}</li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-      {/* ── Permalink copy (PLAN.md §6) ── */}
+      {/* Permalink share row */}
       <div className="report-copy-row">
-        <span className="report-copy-label">Report link:</span>
-        <span className="report-copy-link" title={reportUrl}>
-          {reportUrl}
-        </span>
-        <button
-          className="btn-copy"
-          onClick={copyLink}
-          aria-label="Copy report link to clipboard"
-          id="copy-report-link-btn"
-        >
-          {copied ? '✓ Copied' : '⎘ Copy'}
+        <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text)' }}>Report Link:</span>
+        <span className="report-copy-link" title={reportUrl}>{reportUrl}</span>
+        <button className="btn-copy" onClick={copyLink} id="copy-report-link-btn">
+          {copied ? '✓ Copied' : 'Copy permalink'}
         </button>
       </div>
 
-      {/* ── Disclaimer (SECURITY.md §1, PLAN.md §5) ── */}
-      <p className="result-disclaimer">
+      <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center' }}>
         {report.disclaimer}
       </p>
     </section>

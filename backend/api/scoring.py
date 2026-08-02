@@ -45,7 +45,10 @@ def _heuristics_score(h: HeuristicsResult) -> int:
         score += 10  # Contributing signal only (PLAN.md §4.3)
     if h.suspicious_url_features:
         score += 15  # Aggregate of length/IP/shortener/HTTP/keywords
+    if h.text_scam_detected:
+        score += h.text_scam_score
     return min(score, 100)
+
 
 
 def _virustotal_score(vt: ThreatIntelFindings) -> int | None:
@@ -74,33 +77,32 @@ def _virustotal_score(vt: ThreatIntelFindings) -> int | None:
 
 
 def compute_overall_risk_score(
-    ai: AnalysisResult,
     heuristics: HeuristicsResult,
     vt: ThreatIntelFindings,
+    ai: AnalysisResult | None = None,
 ) -> int:
     """
-    Compute the final 0-100 risk score from all three evidence layers.
+    Compute the final 0-100 risk score from Heuristics and VirusTotal.
+    If optional AI findings are provided and active, AI can contribute;
+    otherwise, core scoring relies on 60% Heuristics + 40% VirusTotal.
 
-    IMPORTANT: VT clean + heuristics/AI flagged STILL yields a non-trivial
+    IMPORTANT: VT clean + heuristics flagged STILL yields a non-trivial
     risk score. Do not simplify this into a plain average — doing so would
     allow a clean VT result to silently suppress clear heuristic signals.
-    This is the defense-in-depth guarantee described in PLAN.md §1.
     """
-    ai_score = ai.risk_score  # Already 0-100 from LLM schema
     h_score = _heuristics_score(heuristics)
     vt_score = _virustotal_score(vt)
 
     if vt_score is not None:
-        # All three layers available: 40% AI + 35% heuristics + 25% VT
-        combined = (ai_score * 0.40) + (h_score * 0.35) + (vt_score * 0.25)
+        # Both Heuristics and VT available: 60% Heuristics + 40% VT
+        combined = (h_score * 0.60) + (vt_score * 0.40)
     else:
-        # VT unavailable: redistribute to 60% AI + 40% heuristics
-        # 'No VT data' != 'VT clean' — do not deflate score
-        combined = (ai_score * 0.60) + (h_score * 0.40)
+        # VT unavailable: rely 100% on Heuristics score
+        combined = float(h_score)
 
-    # Floor: if any single layer is Critical (>=80), overall score is at least 40
-    # This prevents a clean VT result from washing out a clear AI+heuristics finding
-    if ai_score >= 80 or h_score >= 80:
-        combined = max(combined, 40.0)
+    # Floor rule: if either layer detects severe risk (>=80), guarantee overall score >= 50
+    if h_score >= 80 or (vt_score is not None and vt_score >= 80):
+        combined = max(combined, 50.0)
 
     return round(min(combined, 100))
+

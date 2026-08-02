@@ -42,8 +42,9 @@ export interface ThreatIntelFindings {
 
 /** Full report returned by the backend — all three evidence layers labeled. */
 export interface FullReport {
-  overall_risk_score: number;   // 0–100
+  overall_risk_score: number | null;   // 0–100 or null if unreadable
   threat_level: string;
+  status?: 'completed' | 'unreadable';
   ai_findings: AIFindings;
   heuristics_findings: HeuristicsFindings;
   threat_intel_findings: ThreatIntelFindings;

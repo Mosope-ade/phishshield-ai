@@ -73,15 +73,7 @@ def check_typosquatting(registered_domain: str) -> TyposquatResult:
     """
     Compare registered_domain against every domain in the top-domains list.
     Flag if Levenshtein distance is 1 or 2 (not 0 — that's the real domain).
-
-    Parameters
-    ----------
-    registered_domain : str
-        The eTLD+1 portion extracted by tldextract (e.g. "go0gle.com").
-
-    Returns
-    -------
-    TyposquatResult
+    Also checks base brand tokens (e.g. "paypa1" in "paypa1-verify.xyz" or "arnaz0n" in "arnaz0n-support.com").
     """
     if not registered_domain:
         return TyposquatResult()
@@ -93,30 +85,47 @@ def check_typosquatting(registered_domain: str) -> TyposquatResult:
     if candidate in top_domains:
         return TyposquatResult()
 
-    closest_domain: str | None = None
-    min_dist = TYPOSQUAT_DISTANCE_THRESHOLD + 1  # start above threshold
+    # Extract base domain name without TLD (e.g. "paypa1-verify" from "paypa1-verify.xyz")
+    cand_base = candidate.split('.')[0]
 
-    for top_domain in top_domains:
-        # Skip comparing domains of very different lengths early — a domain that
-        # differs by more than threshold characters in length cannot be within
-        # threshold edit distance.
-        if abs(len(candidate) - len(top_domain)) > TYPOSQUAT_DISTANCE_THRESHOLD:
+    # Pre-extract base brand names from top domains for apples-to-apples comparison
+    top_brands = {td.split('.')[0]: td for td in top_domains}
+
+    # Extract potential brand tokens if domain is hyphenated (e.g. ["paypa1", "verify"])
+    cand_tokens = cand_base.split('-') if '-' in cand_base else [cand_base]
+
+    closest_domain: str | None = None
+    min_dist = TYPOSQUAT_DISTANCE_THRESHOLD + 1
+    matched_cand_part = candidate
+
+    for token in cand_tokens:
+        if len(token) < 3:
             continue
 
-        dist = levenshtein_distance(candidate, top_domain)
+        for top_brand, full_top_domain in top_brands.items():
+            # Skip exact matches on legit brand tokens (e.g. "support" in "paypal-support.com")
+            if token == top_brand:
+                continue
 
-        if 0 < dist <= TYPOSQUAT_DISTANCE_THRESHOLD:
-            if dist < min_dist:
-                min_dist = dist
-                closest_domain = top_domain
+            if abs(len(token) - len(top_brand)) > TYPOSQUAT_DISTANCE_THRESHOLD:
+                continue
+
+            dist = levenshtein_distance(token, top_brand)
+
+            if 0 < dist <= TYPOSQUAT_DISTANCE_THRESHOLD:
+                if dist < min_dist:
+                    min_dist = dist
+                    closest_domain = full_top_domain
+                    matched_cand_part = token
 
     if closest_domain is not None:
         return TyposquatResult(
             detected=True,
             notes=[
-                f"[Heuristics] Possible typosquat: '{candidate}' is {min_dist} edit(s) "
-                f"away from '{closest_domain}' (a top-ranked domain)."
+                f"[Heuristics] Possible typosquat: '{matched_cand_part}' in '{candidate}' is {min_dist} edit(s) "
+                f"away from top domain '{closest_domain}'."
             ],
         )
 
     return TyposquatResult()
+

@@ -10,16 +10,11 @@ export function Disclaimer() {
     <>
       <main id="main-content">
         <article className="learn-page">
-          <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', fontSize: '28px', marginBottom: '6px', color: 'var(--text)' }}>
-            Disclaimer
-          </h1>
+          <h1>Disclaimer</h1>
 
           <h2>Decision-support tool, not a guarantee</h2>
           <p>
-            HookCheck is a <strong>decision-support tool</strong>. Its analysis is intended to help
-            you make a more informed judgment, not to replace your own judgment. A result of
-            "Likely Safe" does not mean the content is definitively safe, and a result of
-            "Likely Phishing" does not mean the content is definitively malicious.
+            HookCheck is a decision-support tool. Its analysis is intended to help you make a more informed judgment, not to replace your own judgment. A result of "Likely Safe" does not mean the content is definitively safe, and a result of "Likely Phishing" does not mean the content is definitively malicious.
           </p>
 
           <h2>Limitations</h2>
@@ -32,16 +27,12 @@ export function Disclaimer() {
 
           <h2>No liability</h2>
           <p>
-            HookCheck and its operators accept no liability for any harm arising from acting
-            on or ignoring the results of an analysis. Use of this tool is at your own risk.
-            Always exercise independent judgment and, when in doubt, consult your organization's
-            IT or security team.
+            HookCheck and its operators accept no liability for any harm arising from acting on or ignoring the results of an analysis. Use of this tool is at your own risk. Always exercise independent judgment and, when in doubt, consult your organization's IT or security team.
           </p>
 
           <h2>Accuracy</h2>
           <p>
-            We make no representations about the accuracy, completeness, or timeliness of any
-            analysis result. The tool is provided "as is" without warranty of any kind.
+            We make no representations about the accuracy, completeness, or timeliness of any analysis result. The tool is provided "as is" without warranty of any kind.
           </p>
         </article>
       </main>

@@ -87,12 +87,14 @@ class ThreatIntelFindings(BaseModel):
 class FullReport(BaseModel):
     """Complete API response sent to frontend. PLAN.md §5."""
 
-    overall_risk_score: Annotated[int, Field(ge=0, le=100)]
+    overall_risk_score: Optional[Annotated[int, Field(ge=0, le=100)]] = None
     threat_level: str
+    status: Literal['completed', 'unreadable'] = 'completed'
     ai_findings: AnalysisResult
     heuristics_findings: HeuristicsFindings
     threat_intel_findings: ThreatIntelFindings
     report_id: str  # Non-sequential random slug (SECURITY.md §15)
+
     disclaimer: str = (
         'This is a decision-support tool, not a guarantee of safety. '
         'Always exercise caution with unexpected messages and links.'

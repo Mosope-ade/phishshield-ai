@@ -17,8 +17,7 @@ SECURITY.md §6: raw LLM output is NEVER returned to callers unvalidated.
 Callers must validate against AnalysisResult (Pydantic schema) before use.
 """
 
-from __future__ import annotations
-
+import asyncio
 import json
 import logging
 import os
@@ -28,6 +27,7 @@ from typing import Any, Optional
 import httpx
 
 logger = logging.getLogger(__name__)
+
 
 
 class LLMError(RuntimeError):
@@ -330,10 +330,81 @@ async def call_llm_for_analysis(
         )
         result = await _attempt(system_prompt, user_content_block + retry_reminder)
 
-    if result is None:
-        raise LLMError(
-            'LLM returned non-JSON output after retry. Analysis unavailable.'
-        )
+async def extract_text_via_ai(
+    image_base64: str,
+    image_media_type: str = 'image/png',
+    timeout_seconds: float = 2.5,
+) -> Optional[str]:
+    """
+    Tier 2 Vision AI Text Extraction.
+    Uses an explicit httpx.Timeout(2.5) to guarantee underlying HTTP socket cancellation.
+    Returns extracted text string, or None if unavailable/timed out.
+    """
+    if not supports_vision():
+        return None
 
-    return result
+    provider = os.environ.get('LLM_PROVIDER', '').lower()
+    model = os.environ.get('LLM_MODEL', '')
+    api_key = os.environ.get('LLM_API_KEY', '')
+
+    if not model or not api_key:
+        return None
+
+    sys_prompt = (
+        "You are an OCR extraction engine. Extract all visible plain text and URLs from "
+        "the user image. Return a raw JSON object with key 'extracted_text'. Do not analyze risk."
+    )
+    user_block = "<IMAGE_DATA>Extract all text visible in this image.</IMAGE_DATA>"
+
+    clean_model = model.split('/')[-1] if '/' in model else model
+    timeout = httpx.Timeout(timeout_seconds, connect=1.0)
+
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            if 'gemini' in model.lower() or provider == 'gemini':
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{clean_model}:generateContent?key={api_key}"
+                payload = {
+                    "contents": [{
+                        "role": "user",
+                        "parts": [
+                            {"inlineData": {"mimeType": image_media_type, "data": image_base64}},
+                            {"text": sys_prompt + "\n" + user_block}
+                        ]
+                    }],
+                    "generationConfig": {"temperature": 0.0, "responseMimeType": "application/json"}
+                }
+                resp = await asyncio.wait_for(client.post(url, json=payload), timeout=timeout_seconds)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    raw = data['candidates'][0]['content']['parts'][0]['text']
+                    parsed = _extract_json_from_response(raw)
+                    return parsed.get('extracted_text') if parsed else raw
+            elif 'gpt' in model.lower() or provider == 'openai':
+                url = "https://api.openai.com/v1/chat/completions"
+                headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+                payload = {
+                    "model": clean_model,
+                    "messages": [
+                        {"role": "system", "content": sys_prompt},
+                        {"role": "user", "content": [
+                            {"type": "image_url", "image_url": {"url": f"data:{image_media_type};base64,{image_base64}"}},
+                            {"type": "text", "text": user_block}
+                        ]}
+                    ],
+                    "temperature": 0.0,
+                    "response_format": {"type": "json_object"}
+                }
+                resp = await asyncio.wait_for(client.post(url, headers=headers, json=payload), timeout=timeout_seconds)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    raw = data['choices'][0]['message']['content']
+                    parsed = _extract_json_from_response(raw)
+                    return parsed.get('extracted_text') if parsed else raw
+    except Exception as err:
+        logger.warning("Tier 2 AI text extraction failed/timed out: %s", err)
+        return None
+
+    return None
+
+
 
