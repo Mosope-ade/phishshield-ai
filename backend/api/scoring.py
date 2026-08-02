@@ -8,19 +8,8 @@ PLAN.md §4.3 Step 5 and PLAN.md §1 (core design law):
 - VT clean + heuristics/AI flagged STILL yields a non-trivial risk score.
 - No layer silently overrides the others.
 - VirusTotal is corroborating evidence, never the sole verdict.
-
-This function's weighting logic is deliberately documented here so nobody
-'simplifies' it into a plain average later — that would break the defense-
-in-depth property described in PLAN.md §1 and SECURITY.md §3.
-
-Weight rationale:
-- AI (40%): captures language/intent nuance; but can be prompt-injected.
-- Heuristics (35%): deterministic, uninjectable; highest confidence findings.
-- VirusTotal (25%): external corroboration; added to, not replacing, others.
-
-Important: when VT is unavailable, its weight is redistributed to AI (60%) +
-heuristics (40%) rather than treating 'no VT data' as 'VT says clean'. This
-ensures unavailable VT never silently deflates the risk score.
+- If AI or VirusTotal is unavailable (confidence == 0 or vt.available == False),
+  missing data never deflates the score. Weights dynamically redistribute to active layers.
 """
 
 from __future__ import annotations
@@ -62,8 +51,6 @@ def _virustotal_score(vt: ThreatIntelFindings) -> int | None:
     if vt.malicious_votes is None or vt.total_votes is None or vt.total_votes == 0:
         return 0
 
-    # Scale: 1 malicious engine = 20; 5+ = 100
-    # (VT free tier gets ~70 engines; 5 flagging = ~7% = high confidence)
     ratio = vt.malicious_votes / vt.total_votes
     if ratio == 0:
         return 0
