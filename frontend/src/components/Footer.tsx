@@ -1,10 +1,6 @@
 import { Shield } from 'lucide-react';
 
-interface FooterProps {
-  onOpenModal?: (type: 'learn' | 'privacy' | 'disclaimer') => void;
-}
-
-export function Footer({ onOpenModal }: FooterProps) {
+export function Footer() {
   return (
     <footer className="border-t border-[#1E2638] bg-[#070A0F] py-12 text-xs text-slate-400">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,26 +22,26 @@ export function Footer({ onOpenModal }: FooterProps) {
             </div>
           </div>
 
-          {/* Core Footer Navigation Links */}
+          {/* Single Page Smooth Scroll Navigation Links */}
           <div className="flex flex-wrap items-center justify-center gap-6 text-slate-300 font-medium">
-            <button
-              onClick={() => onOpenModal?.('learn')}
-              className="hover:text-cyan-400 transition-colors"
-            >
+            <a href="#how" className="hover:text-cyan-400 transition-colors">
               How It Works
-            </button>
-            <button
-              onClick={() => onOpenModal?.('privacy')}
-              className="hover:text-cyan-400 transition-colors"
-            >
-              Privacy Policy
-            </button>
-            <button
-              onClick={() => onOpenModal?.('disclaimer')}
-              className="hover:text-cyan-400 transition-colors"
-            >
+            </a>
+            <a href="#features" className="hover:text-cyan-400 transition-colors">
+              Features
+            </a>
+            <a href="#sample-report" className="hover:text-cyan-400 transition-colors">
+              Sample Report
+            </a>
+            <a href="#privacy" className="hover:text-cyan-400 transition-colors">
+              Privacy Architecture
+            </a>
+            <a href="#disclaimer" className="hover:text-cyan-400 transition-colors">
               Disclaimer
-            </button>
+            </a>
+            <a href="#faq" className="hover:text-cyan-400 transition-colors">
+              FAQ
+            </a>
             <a
               href="https://github.com/Mosope-ade/phishshield-ai"
               target="_blank"

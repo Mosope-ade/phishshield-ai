@@ -6,6 +6,8 @@ const navLinks = [
   { label: 'Analyze', href: '#analyze' },
   { label: 'How it works', href: '#how' },
   { label: 'Features', href: '#features' },
+  { label: 'Sample Report', href: '#sample-report' },
+  { label: 'Privacy', href: '#privacy' },
   { label: 'FAQ', href: '#faq' },
 ];
 
@@ -50,12 +52,12 @@ export function Navbar() {
         </a>
 
         {/* Desktop Navigation Links */}
-        <div className="hidden md:flex items-center gap-1 bg-[#121824]/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-[#1E2638]">
+        <div className="hidden lg:flex items-center gap-1 bg-[#121824]/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-[#1E2638]">
           {navLinks.map((link) => (
             <a
               key={link.href}
               href={link.href}
-              className="px-4 py-1.5 text-xs font-medium text-slate-300 hover:text-cyan-400 rounded-full hover:bg-white/5 transition-all"
+              className="px-3.5 py-1 text-xs font-medium text-slate-300 hover:text-cyan-400 rounded-full hover:bg-white/5 transition-all"
             >
               {link.label}
             </a>
@@ -63,7 +65,7 @@ export function Navbar() {
         </div>
 
         {/* Status Indicator & Quick Action */}
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-3">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span>Multi-Engine Active</span>
@@ -93,7 +95,7 @@ export function Navbar() {
         {/* Mobile Menu Button */}
         <button
           onClick={() => setOpen((v) => !v)}
-          className="md:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-[#121824] border border-[#1E2638] text-slate-300 hover:text-white"
+          className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl bg-[#121824] border border-[#1E2638] text-slate-300 hover:text-white"
           aria-label="Toggle Navigation Menu"
         >
           {open ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -108,7 +110,7 @@ export function Navbar() {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="md:hidden overflow-hidden bg-[#0B0E14]/95 backdrop-blur-2xl border-b border-[#1E2638]"
+            className="lg:hidden overflow-hidden bg-[#0B0E14]/95 backdrop-blur-2xl border-b border-[#1E2638]"
           >
             <div className="px-5 py-4 flex flex-col gap-2">
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium mb-1">

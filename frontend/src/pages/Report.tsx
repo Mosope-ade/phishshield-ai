@@ -5,7 +5,6 @@ import type { FullReport } from '../types/api';
 import { ResultsBlock } from '../components/ResultsBlock';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
-import { InfoModals } from '../components/InfoModals';
 import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 
 export function Report() {
@@ -13,7 +12,6 @@ export function Report() {
   const [report, setReport] = useState<FullReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [modalType, setModalType] = useState<'learn' | 'privacy' | 'disclaimer' | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -103,13 +101,7 @@ export function Report() {
         )}
       </main>
 
-      <Footer onOpenModal={(t) => setModalType(t)} />
-
-      <InfoModals
-        isOpen={!!modalType}
-        type={modalType}
-        onClose={() => setModalType(null)}
-      />
+      <Footer />
     </div>
   );
 }
