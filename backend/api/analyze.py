@@ -127,8 +127,8 @@ async def _analyze_url_pipeline(url: str) -> tuple[HeuristicsResult, AnalysisRes
             user_content_block=user_block,
         )
         ai_result = AnalysisResult.model_validate(raw_llm)
-    except (LLMError, ValidationError) as e:
-        logger.warning('AI analysis failed for URL: %s', e)
+    except Exception as e:
+        logger.info('AI analysis unavailable for URL: %s', e)
         ai_result = _ai_unavailable_result()
 
     # Step 4: VirusTotal
@@ -210,8 +210,8 @@ async def analyze_text(request: Request, response: Response, body: TextAnalysisR
                 user_content_block=user_block,
             )
             ai_result = AnalysisResult.model_validate(raw_llm)
-        except (LLMError, ValidationError) as e:
-            logger.warning('AI text analysis failed: %s', e)
+        except Exception as e:
+            logger.info('AI text analysis unavailable: %s', e)
             ai_result = _ai_unavailable_result()
 
         vt_result = url_vt_result
@@ -305,8 +305,8 @@ async def analyze_image(
                     user_content_block=user_block,
                 )
                 ai_result = AnalysisResult.model_validate(raw_llm)
-            except (LLMError, ValidationError) as e:
-                logger.warning('AI QR text analysis failed: %s', e)
+            except Exception as e:
+                logger.info('AI QR text analysis unavailable: %s', e)
                 ai_result = _ai_unavailable_result()
             vt_result = ThreatIntelFindings(available=False, notes=['No URL to check against VirusTotal.'])
     else:
@@ -324,8 +324,8 @@ async def analyze_image(
                     image_media_type=file.content_type or 'image/png',
                 )
                 ai_result = AnalysisResult.model_validate(raw_llm)
-            except (LLMError, ValidationError) as e:
-                logger.warning('Vision AI analysis failed: %s', e)
+            except Exception as e:
+                logger.info('Vision AI analysis unavailable: %s', e)
                 ai_result = _ai_unavailable_result()
         else:
             # Fallback to Tesseract OCR
@@ -342,8 +342,8 @@ async def analyze_image(
                         user_content_block=user_block,
                     )
                     ai_result = AnalysisResult.model_validate(raw_llm)
-                except (LLMError, ValidationError) as e:
-                    logger.warning('OCR+AI analysis failed: %s', e)
+                except Exception as e:
+                    logger.info('OCR+AI analysis unavailable: %s', e)
                     ai_result = _ai_unavailable_result()
             else:
                 ai_result = _ai_unavailable_result()

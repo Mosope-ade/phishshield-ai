@@ -1,35 +1,40 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+/**
+ * App.tsx — root router.
+ * PLAN.md §6: four pages — Landing, Report/:id, Learn, Privacy, Disclaimer.
+ * Topbar is rendered on all pages.
+ */
+
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Topbar } from './components/Topbar';
 import { Landing } from './pages/Landing';
 import { Report } from './pages/Report';
+import { Learn } from './pages/Learn';
+import { Privacy } from './pages/Privacy';
+import { Disclaimer } from './pages/Disclaimer';
 
 export default function App() {
   return (
     <BrowserRouter>
-      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-cyan-500 focus:text-black">
+      <a href="#main-content" className="sr-only" style={{ position: 'absolute', left: '-9999px' }}>
         Skip to main content
       </a>
+      <Topbar />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/report/:id" element={<Report />} />
-        {/* Support direct navigational links by redirecting to home page sections */}
-        <Route path="/learn" element={<Navigate to="/#how" replace />} />
-        <Route path="/privacy" element={<Navigate to="/" replace />} />
-        <Route path="/disclaimer" element={<Navigate to="/" replace />} />
-        <Route
-          path="*"
-          element={
-            <div className="min-h-screen bg-[#0B0E14] text-white flex flex-col items-center justify-center p-6 text-center">
-              <h1 className="text-4xl font-extrabold text-cyan-400 mb-2">404 — Page Not Found</h1>
-              <p className="text-slate-400 text-sm mb-6">The page you are looking for does not exist.</p>
-              <a
-                href="/"
-                className="px-5 py-2.5 text-xs font-semibold text-white bg-brand-600 hover:bg-brand-500 rounded-xl transition-all"
-              >
-                ← Back to HookCheck Home
-              </a>
-            </div>
-          }
-        />
+        <Route path="/learn" element={<Learn />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/disclaimer" element={<Disclaimer />} />
+        <Route path="*" element={
+          <main style={{ padding: '48px 16px', textAlign: 'center' }}>
+            <h1 style={{ fontFamily: 'Space Grotesk, sans-serif', color: 'var(--accent)', marginBottom: '12px' }}>
+              404 — Page Not Found
+            </h1>
+            <p style={{ color: 'var(--text-2)' }}>
+              <a href="/">← Back to HookCheck</a>
+            </p>
+          </main>
+        } />
       </Routes>
     </BrowserRouter>
   );
